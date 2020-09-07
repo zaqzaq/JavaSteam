@@ -34,9 +34,12 @@ public class SampleLogon implements Runnable {
 
     private String pass;
 
-    public SampleLogon(String user, String pass) {
+    private String accountNo;
+
+    public SampleLogon(String user, String pass,String accountNo) {
         this.user = user;
         this.pass = pass;
+        this.accountNo=accountNo;
     }
 
     public static void main(String[] args) throws Exception {
@@ -50,13 +53,14 @@ public class SampleLogon implements Runnable {
         BufferedReader bf = new BufferedReader(inputReader);
         String str;
         while ((str = bf.readLine()) != null) {
-            String[] split = str.split(",");
+            String[] split = str.split("\t");
 
-            String acc=split[0];
-            String pwd=split[1];
+            String accountNo=split[0];
+            String acc=split[1];
+            String pwd=split[2];
 
-            ThreadPoolUtil.async(new SampleLogon(acc, pwd));
-//            Thread.sleep(1500L);
+            ThreadPoolUtil.async(new SampleLogon(acc, pwd,accountNo));
+            Thread.sleep(1000L);
         }
         bf.close();
         inputReader.close();
@@ -127,10 +131,10 @@ public class SampleLogon implements Runnable {
     private void onVACStatus(VACStatusCallback callback){
         if (callback.getBannedApps().size()>0) {
             System.err.println(user+" has VAC: "+callback.getBannedApps());
-            writeResPwd(user+",vac,"+callback.getBannedApps());
+            writeResPwd(accountNo+","+user+",vac,"+callback.getBannedApps());
         }else{
             System.err.println(user+" has`t VAC");
-            writeResPwd(user+",:)");
+            writeResPwd(accountNo+","+user+",:)");
         }
         isRunning = false;
     }
@@ -150,12 +154,12 @@ public class SampleLogon implements Runnable {
 
         isRunning = false;
         //again
-        ThreadPoolUtil.async(new SampleLogon(user, pass));
+        ThreadPoolUtil.async(new SampleLogon(user, pass,accountNo));
     }
 
     private void onLoggedOn(LoggedOnCallback callback) {
         if (callback.getResult() != EResult.OK) {
-            writeResPwd(user+",error,"+callback.getResult().name());
+            writeResPwd(accountNo+","+user+",error,"+callback.getResult().name()+","+pass);
             if (callback.getResult() == EResult.AccountLogonDenied) {
                 // if we recieve AccountLogonDenied or one of it's flavors (AccountLogonDeniedNoMailSent, etc)
                 // then the account we're logging into is SteamGuard protected
