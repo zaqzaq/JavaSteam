@@ -1,6 +1,9 @@
 package in.dragonbra.javasteamsamples;
 
 import in.dragonbra.javasteam.enums.EResult;
+import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver;
+import in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps;
+import in.dragonbra.javasteam.steam.handlers.steamapps.callback.GetClientAppListResponseCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
@@ -27,6 +30,8 @@ public class SampleLogonSinger implements Runnable {
     private CallbackManager manager;
 
     private SteamUser steamUser;
+
+    private SteamApps steamApps;
 
     private boolean isRunning;
 
@@ -57,7 +62,7 @@ public class SampleLogonSinger implements Runnable {
 
         // get the steamuser handler, which is used for logging on after successfully connecting
         steamUser = steamClient.getHandler(SteamUser.class);
-
+        steamApps = steamClient.getHandler(SteamApps.class);
         // register a few callbacks we're interested in
         // these are registered upon creation to a callback manager, which will then route the callbacks
         // to the functions specified
@@ -68,6 +73,8 @@ public class SampleLogonSinger implements Runnable {
         manager.subscribe(LoggedOffCallback.class, this::onLoggedOff);
 
         manager.subscribe(VACStatusCallback.class,this::onVACStatus);
+        manager.subscribe(GetClientAppListResponseCallback.class,this::onAppListResponse);
+
 
         isRunning = true;
 
@@ -83,8 +90,6 @@ public class SampleLogonSinger implements Runnable {
         }
 
         System.out.println(user+",run finshed");
-//        steamClient.disconnect();
-        steamUser.logOff();
     }
 
     private void onVACStatus(VACStatusCallback callback){
@@ -93,7 +98,7 @@ public class SampleLogonSinger implements Runnable {
         }else{
             System.err.println(user+" has`t VAC");
         }
-        isRunning = false;
+        steamApps.getClientAppList();
     }
 
     private void onConnected(ConnectedCallback callback) {
@@ -140,14 +145,20 @@ public class SampleLogonSinger implements Runnable {
         }
         System.out.println("Successfully logged on!");
 
-        // at this point, we'd be able to perform actions on Steam
-
-        // for this sample we'll just log off
-//        steamUser.logOff();
+        steamApps.getClientAppList();
+        steamApps.getAppOwnershipTicket(872410);
     }
 
     private void onLoggedOff(LoggedOffCallback callback) {
         System.out.println("Logged off of Steam: " + callback.getResult());
         isRunning = false;
+    }
+
+    private void onAppListResponse(GetClientAppListResponseCallback callback){
+        for (SteammessagesClientserver.CMsgClientGetClientAppListResponse.App app : callback.getAppsList()) {
+            for (SteammessagesClientserver.CMsgClientGetClientAppListResponse.App.DLC dlc : app.getDlcsList()) {
+                System.out.println("dlc:::::::"+dlc);
+            }
+        }
     }
 }

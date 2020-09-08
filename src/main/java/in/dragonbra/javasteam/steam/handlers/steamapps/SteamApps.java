@@ -100,8 +100,32 @@ public class SteamApps extends ClientMsgHandler {
             }
         });
 
+        dispatchMap.put(EMsg.ClientGetClientAppListResponse, new Consumer<IPacketMsg>() {
+            @Override
+            public void accept(IPacketMsg packetMsg) {
+                handleGetClientAppListResponse(packetMsg);
+            }
+        });
+
         dispatchMap = Collections.unmodifiableMap(dispatchMap);
     }
+
+
+    /**
+     * no effect why???????
+     * @return
+     */
+    public JobID getClientAppList() {
+        ClientMsgProtobuf<CMsgClientGetClientAppList.Builder> request =
+                new ClientMsgProtobuf<>(CMsgClientGetClientAppList.class, EMsg.ClientGetClientAppList);
+        JobID jobID = client.getNextJobID();
+        request.setSourceJobID(jobID);
+        request.getBody().setGames(true).setComics(true).setMedia(true).setOnlyChanging(false).setOnlyInstalled(false).setTools(true);
+        client.send(request);
+
+        return jobID;
+    }
+
 
     /**
      * Requests an app ownership ticket for the specified AppID.
@@ -574,5 +598,12 @@ public class SteamApps extends ClientMsgHandler {
                 new ClientMsgProtobuf<>(CMsgClientCheckAppBetaPasswordResponse.class, packetMsg);
 
         client.postCallback(new CheckAppBetaPasswordCallback(response.getTargetJobID(), response.getBody()));
+    }
+
+    private void handleGetClientAppListResponse(IPacketMsg packetMsg){
+        ClientMsgProtobuf<CMsgClientGetClientAppListResponse.Builder> response =
+                new ClientMsgProtobuf<>(CMsgClientGetClientAppListResponse.class, packetMsg);
+
+        client.postCallback(new GetClientAppListResponseCallback(response.getTargetJobID(), response.getBody()));
     }
 }
