@@ -13,6 +13,7 @@ import in.dragonbra.javasteam.steam.steamclient.SteamClient;
 import in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback;
+import in.dragonbra.javasteam.types.SteamID;
 import in.dragonbra.javasteam.util.log.DefaultLogListener;
 import in.dragonbra.javasteam.util.log.LogManager;
 
@@ -45,6 +46,9 @@ public class SampleLogonSinger implements Runnable {
     }
 
     public static void main(String[] args) throws Exception {
+        SteamID steamID=new SteamID(76561199018825992L);
+        System.out.println(steamID.getAccountID());
+
         LogManager.addListener(new DefaultLogListener());
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
@@ -88,8 +92,7 @@ public class SampleLogonSinger implements Runnable {
             // in order for the callbacks to get routed, they need to be handled by the manager
             manager.runWaitCallbacks(1000L);
         }
-
-        System.out.println(user+",run finshed");
+        System.out.println(user+",run finshed,steamId:"+steamClient.getSteamID().getAccountID());
     }
 
     private void onVACStatus(VACStatusCallback callback){
