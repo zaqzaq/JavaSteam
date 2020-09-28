@@ -3,6 +3,7 @@ package in.dragonbra.javasteamsamples;
 import in.dragonbra.javasteam.enums.EResult;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver;
 import in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps;
+import in.dragonbra.javasteam.steam.handlers.steamapps.callback.AppOwnershipTicketCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.GetClientAppListResponseCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
@@ -52,7 +53,7 @@ public class SampleLogonSinger implements Runnable {
         LogManager.addListener(new DefaultLogListener());
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
-        ThreadPoolUtil.async(new SampleLogonSinger("z2PxeYCr", "DOYqKZRG0Vc3"));
+        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
     }
 
     @Override
@@ -79,6 +80,8 @@ public class SampleLogonSinger implements Runnable {
         manager.subscribe(VACStatusCallback.class,this::onVACStatus);
         manager.subscribe(GetClientAppListResponseCallback.class,this::onAppListResponse);
 
+        manager.subscribe(AppOwnershipTicketCallback.class,this::onAppOwnershipTicketCallback);
+
 
         isRunning = true;
 
@@ -95,6 +98,11 @@ public class SampleLogonSinger implements Runnable {
         System.out.println(user+",run finshed,steamId:"+steamClient.getSteamID().getAccountID());
     }
 
+    private void onAppOwnershipTicketCallback(AppOwnershipTicketCallback callback){
+        System.out.println(callback.getTicket());
+        System.out.println(callback);
+    }
+
     private void onVACStatus(VACStatusCallback callback){
         if (callback.getBannedApps().size()>0) {
             System.err.println(user+" has VAC: "+callback.getBannedApps());
@@ -102,6 +110,7 @@ public class SampleLogonSinger implements Runnable {
             System.err.println(user+" has`t VAC");
         }
         steamApps.getClientAppList();
+        steamApps.getAppOwnershipTicket(1097150);
     }
 
     private void onConnected(ConnectedCallback callback) {
