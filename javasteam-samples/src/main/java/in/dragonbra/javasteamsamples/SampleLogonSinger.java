@@ -10,6 +10,7 @@ import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback;
+import in.dragonbra.javasteam.steam.handlers.steamuser.callback.WebAPIUserNonceCallback;
 import in.dragonbra.javasteam.steam.steamclient.SteamClient;
 import in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback;
@@ -81,6 +82,9 @@ public class SampleLogonSinger implements Runnable {
         manager.subscribe(GetClientAppListResponseCallback.class,this::onAppListResponse);
 
         manager.subscribe(AppOwnershipTicketCallback.class,this::onAppOwnershipTicketCallback);
+        manager.subscribe(WebAPIUserNonceCallback.class,this::onWebAPIUserNonceCallback);
+
+
 
 
         isRunning = true;
@@ -98,6 +102,11 @@ public class SampleLogonSinger implements Runnable {
         System.out.println(user+",run finshed,steamId:"+steamClient.getSteamID().getAccountID());
     }
 
+    private void onWebAPIUserNonceCallback(WebAPIUserNonceCallback callback){
+        System.out.println(callback.getNonce());
+        System.out.println(callback);
+    }
+
     private void onAppOwnershipTicketCallback(AppOwnershipTicketCallback callback){
         System.out.println(callback.getTicket());
         System.out.println(callback);
@@ -111,6 +120,7 @@ public class SampleLogonSinger implements Runnable {
         }
         steamApps.getClientAppList();
         steamApps.getAppOwnershipTicket(1097150);
+        steamUser.requestWebAPIUserNonce();
     }
 
     private void onConnected(ConnectedCallback callback) {
