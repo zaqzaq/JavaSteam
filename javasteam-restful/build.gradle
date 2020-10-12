@@ -52,6 +52,7 @@ dependencies {
     compile 'org.bouncycastle:bcprov-jdk15on:1.59'
     compile 'com.google.protobuf:protobuf-java:3.5.1'
     compile 'org.springframework.boot:spring-boot-starter-web'
+    compile 'org.apache.httpcomponents:httpclient:4.5.13'
 //    compile 'org.springframework:spring-core'
 //    compile 'org.springframework.boot:spring-boot-starter-web'
 //    compile 'org.springframework.boot:spring-boot-autoconfigure'
