@@ -54,7 +54,8 @@ public class SampleLogonSinger implements Runnable {
         LogManager.addListener(new DefaultLogListener());
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
-        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
+//        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
+        ThreadPoolUtil.async(new SampleLogonSinger("nFclGiry66", "nLldPIFVNp27"));
     }
 
     @Override

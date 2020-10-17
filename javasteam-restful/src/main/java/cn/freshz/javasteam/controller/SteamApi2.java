@@ -187,9 +187,8 @@ public class SteamApi2 {
 
 
     private void onWebAPIUserNonceCallback(WebAPIUserNonceCallback callback) {
-        System.out.println(callback.getNonce());
         System.out.println(callback);
-
+        System.out.println("nonce2:"+callback.getNonce());
         while (LoginKey==null){
             try {
                 Thread.sleep(2000L);
@@ -202,7 +201,8 @@ public class SteamApi2 {
 
             byte[] sessionKey  = CryptoHelper.generateRandomBlock(32);
 
-            RSACrypto rsa = new RSACrypto(KeyDictionary.getPublicKey(EUniverse.Public));
+//            RSACrypto rsa = new RSACrypto(KeyDictionary.getPublicKey(EUniverse.Public));
+            RSACrypto rsa = new RSACrypto(KeyDictionary.getPublicKey(steamClient.getUniverse()));
 
             byte[] cryptedSessionKey = rsa.encrypt(sessionKey);
 
@@ -217,7 +217,7 @@ public class SteamApi2 {
            HttpPost httpPost=new HttpPost("https://api.steampowered.com/ISteamUserAuth/AuthenticateUser/v0001");
 
             StringBuilder args=new StringBuilder();
-            args.append("format=vdf&steamid="+steamClient.getSteamID().convertToUInt64());
+            args.append("format=json&steamid="+steamClient.getSteamID().convertToUInt64());
             args.append("&sessionkey="+WebHelpers.urlEncode(cryptedSessionKey));
             args.append("&encrypted_loginkey="+WebHelpers.urlEncode(cryptedLoginKey));
 
@@ -287,6 +287,45 @@ public class SteamApi2 {
                     logger.info("Unable to logon to Steam: " + callback.getResult());
                     return;
 
+                }
+
+                try {
+                    byte[] sessionKey  = CryptoHelper.generateRandomBlock(32);
+
+//            RSACrypto rsa = new RSACrypto(KeyDictionary.getPublicKey(EUniverse.Public));
+                    RSACrypto rsa = new RSACrypto(KeyDictionary.getPublicKey(steamClient.getUniverse()));
+
+                    byte[] cryptedSessionKey = rsa.encrypt(sessionKey);
+
+                    String nonce = callback.getWebAPIUserNonce();
+
+                    System.out.println("nonce1:"+nonce);
+
+                    // aes encrypt the loginkey with our session key
+                    byte[] cryptedLoginKey = CryptoHelper.symmetricEncrypt(nonce.getBytes(), sessionKey);
+
+                    HttpClientBuilder custom = HttpClients.custom();
+                    CloseableHttpClient httpClient = custom.build();
+
+                    HttpPost httpPost=new HttpPost("https://api.steampowered.com/ISteamUserAuth/AuthenticateUser/v1");
+
+                    StringBuilder args=new StringBuilder();
+                    args.append("format=json&steamid="+steamClient.getSteamID().convertToUInt64());
+                    args.append("&sessionkey="+WebHelpers.urlEncode(cryptedSessionKey));
+                    args.append("&encrypted_loginkey="+WebHelpers.urlEncode(cryptedLoginKey));
+
+                    StringEntity urlEncodedFormEntity=new StringEntity(args.toString(), ContentType.APPLICATION_FORM_URLENCODED);
+                    httpPost.setEntity(urlEncodedFormEntity);
+
+                    CloseableHttpResponse httpResponse = httpClient.execute(httpPost);
+
+                    System.out.println(EntityUtils.toString(httpResponse.getEntity()));
+
+
+
+
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
                 logger.info("Successfully logged on!");

@@ -44,7 +44,9 @@ public class RSACrypto {
             e.printStackTrace();
         }
     }
-
+    public RSACrypto(BigInteger mod, BigInteger exp) {
+        init(mod,exp);
+    }
     private void init(BigInteger mod, BigInteger exp) {
         try {
             final RSAPublicKeySpec publicKeySpec = new RSAPublicKeySpec(mod, exp);
