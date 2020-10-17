@@ -151,7 +151,7 @@ public class SteamUser extends ClientMsgHandler {
         logon.getBody().setClientLanguage(details.getClientLanguage());
         logon.getBody().setCellId(details.getCellID());
 
-        //自动开通好友
+        //auto active Friends
         logon.getBody().setLauncherType(1);
 
         logon.getBody().setSteam2TicketRequest(details.isRequestSteam2Ticket());
