@@ -151,6 +151,9 @@ public class SteamUser extends ClientMsgHandler {
         logon.getBody().setClientLanguage(details.getClientLanguage());
         logon.getBody().setCellId(details.getCellID());
 
+        //自动开通好友
+        logon.getBody().setLauncherType(1);
+
         logon.getBody().setSteam2TicketRequest(details.isRequestSteam2Ticket());
 
         // we're now using the latest steamclient package version, this is required to get a proper sentry file for steam guard

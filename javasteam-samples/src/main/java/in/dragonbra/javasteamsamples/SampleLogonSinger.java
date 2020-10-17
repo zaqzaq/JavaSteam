@@ -6,6 +6,8 @@ import in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.AppOwnershipTicketCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.GetClientAppListResponseCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallback;
+import in.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends;
+import in.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendAddedCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback;
@@ -36,6 +38,8 @@ public class SampleLogonSinger implements Runnable {
 
     private SteamApps steamApps;
 
+    private SteamFriends steamFriends;
+
     private boolean isRunning;
 
     private String user;
@@ -55,7 +59,7 @@ public class SampleLogonSinger implements Runnable {
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
 //        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
-        ThreadPoolUtil.async(new SampleLogonSinger("nFclGiry66", "nLldPIFVNp27"));
+        ThreadPoolUtil.async(new SampleLogonSinger("BBuFglwl21", "BmutfAzFLW37"));
     }
 
     @Override
@@ -70,6 +74,7 @@ public class SampleLogonSinger implements Runnable {
         // get the steamuser handler, which is used for logging on after successfully connecting
         steamUser = steamClient.getHandler(SteamUser.class);
         steamApps = steamClient.getHandler(SteamApps.class);
+        steamFriends = steamClient.getHandler(SteamFriends.class);
         // register a few callbacks we're interested in
         // these are registered upon creation to a callback manager, which will then route the callbacks
         // to the functions specified
@@ -84,6 +89,7 @@ public class SampleLogonSinger implements Runnable {
 
         manager.subscribe(AppOwnershipTicketCallback.class,this::onAppOwnershipTicketCallback);
         manager.subscribe(WebAPIUserNonceCallback.class,this::onWebAPIUserNonceCallback);
+        manager.subscribe(FriendAddedCallback.class,this::onFriendAddedCallback);
 
 
 
@@ -111,6 +117,14 @@ public class SampleLogonSinger implements Runnable {
     private void onAppOwnershipTicketCallback(AppOwnershipTicketCallback callback){
         System.out.println(callback.getTicket());
         System.out.println(callback);
+
+        steamFriends.addFriend(new SteamID(76561199018825992L));
+    }
+
+    private void onFriendAddedCallback(FriendAddedCallback friendAddedCallback){
+
+        System.out.println(friendAddedCallback);
+        System.out.println(friendAddedCallback);
     }
 
     private void onVACStatus(VACStatusCallback callback){
