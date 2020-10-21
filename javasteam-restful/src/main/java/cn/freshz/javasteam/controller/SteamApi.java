@@ -45,7 +45,7 @@ public class SteamApi {
     private String pass;
 
     private String connectUrl="cm3-ct-sha2.cm.wmsjsteam.com:27020";
-    private String connectUrl2="cm1-ct-sha2.cm.wmsjsteam.com:27021";
+    private String connectUrl2="cm1-ct-sha2.cm.wmsjsteam.com:27020";
 
     private final static String SUCCESS="SUCCESS";
     private final static String ERROR_RETRY = "登陆有异常,请重试";
@@ -95,7 +95,14 @@ public class SteamApi {
             logger.info("帐号状态:account:{} -->{}",user,loginEResult.name());
             return loginEResult.name();
         }
+        steamUser.logOff();
         steamClient.disconnect();
+        try {
+            Thread.sleep(100L);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
         //换一个连接地址重新登陆
         connectUrl=connectUrl2;
         login();
