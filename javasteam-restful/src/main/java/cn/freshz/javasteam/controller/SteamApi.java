@@ -92,6 +92,7 @@ public class SteamApi {
             return ERROR_RETRY;
         }
         if(loginEResult!=EResult.OK){
+            logger.info("帐号状态:account:{} -->{}",user,loginEResult.name());
             return loginEResult.name();
         }
         steamClient.disconnect();
@@ -108,7 +109,11 @@ public class SteamApi {
             }
         }
 
-        return null==loginEResult? ERROR_RETRY :loginEResult.name();
+
+        String retVal = null == loginEResult ? ERROR_RETRY : loginEResult.name();
+        logger.info("帐号状态:account:{} -->{}",user,retVal);
+
+        return retVal;
     }
 //    @GetMapping("activeSteamGuard")
     public String activeSteamGuard(){
