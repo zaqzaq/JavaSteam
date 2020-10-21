@@ -36,12 +36,22 @@ public class LogOnDetails {
 
     private String clientLanguage = "";
 
+    private Integer launcherType;
+
     public LogOnDetails() {
         accountInstance = SteamID.DESKTOP_INSTANCE;
         accountID = 0L;
 
         clientOSType = Utils.getOSType();
         clientLanguage = "english";
+    }
+
+    public Integer getLauncherType() {
+        return launcherType;
+    }
+
+    public void setLauncherType(Integer launcherType) {
+        this.launcherType = launcherType;
     }
 
     public String getUsername() {

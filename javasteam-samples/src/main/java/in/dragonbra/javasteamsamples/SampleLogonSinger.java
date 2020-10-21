@@ -1,7 +1,9 @@
 package in.dragonbra.javasteamsamples;
 
 import in.dragonbra.javasteam.enums.EResult;
+import in.dragonbra.javasteam.networking.steam3.ProtocolTypes;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver;
+import in.dragonbra.javasteam.steam.discovery.ServerRecord;
 import in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.AppOwnershipTicketCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.GetClientAppListResponseCallback;
@@ -9,6 +11,8 @@ import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallbac
 import in.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends;
 import in.dragonbra.javasteam.steam.handlers.steamfriends.callback.FriendAddedCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
+import in.dragonbra.javasteam.steam.handlers.steamuser.MachineAuthDetails;
+import in.dragonbra.javasteam.steam.handlers.steamuser.OTPDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback;
@@ -17,6 +21,8 @@ import in.dragonbra.javasteam.steam.steamclient.SteamClient;
 import in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.DisconnectedCallback;
+import in.dragonbra.javasteam.steam.steamclient.configuration.SteamConfiguration;
+import in.dragonbra.javasteam.types.JobID;
 import in.dragonbra.javasteam.types.SteamID;
 import in.dragonbra.javasteam.util.log.DefaultLogListener;
 import in.dragonbra.javasteam.util.log.LogManager;
@@ -59,14 +65,17 @@ public class SampleLogonSinger implements Runnable {
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
 //        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
-        ThreadPoolUtil.async(new SampleLogonSinger("BBuFglwl21", "BmutfAzFLW37"));
+        ThreadPoolUtil.async(new SampleLogonSinger("nbshq3", "steam123ZAQ"));
     }
 
     @Override
     public void run() {
 
         // create our steamclient instance
-        steamClient = new SteamClient();
+        SteamConfiguration steamConfiguration=SteamConfiguration.create(iSteamConfigurationBuilder -> {
+            iSteamConfigurationBuilder.withProtocolTypes(ProtocolTypes.ALL);
+        });
+        steamClient = new SteamClient(steamConfiguration);
 
         // create the callback manager which will route callbacks to function calls
         manager = new CallbackManager(steamClient);
@@ -99,7 +108,8 @@ public class SampleLogonSinger implements Runnable {
         System.out.println("Connecting to steam...");
 
         // initiate the connection
-        steamClient.connect();
+//        steamClient.connect();
+        steamClient.connect(ServerRecord.createWebSocketServer("cm3-ct-sha2.cm.wmsjsteam.com:27020"));
 
         // create our callback handling loop
         while (isRunning) {
@@ -136,6 +146,25 @@ public class SampleLogonSinger implements Runnable {
         steamApps.getClientAppList();
         steamApps.getAppOwnershipTicket(1097150);
         steamUser.requestWebAPIUserNonce();
+        OTPDetails otp = new OTPDetails();
+        otp.setIdentifier("testid");
+        otp.setType(5);
+        otp.setValue(42);
+
+        MachineAuthDetails details = new MachineAuthDetails();
+
+        details.setJobID(new JobID(123));
+        details.setFileName("testfilename");
+        details.setBytesWritten(10);
+        details.setFileSize(16);
+        details.setOffset(69);
+        details.seteResult(EResult.OK);
+        details.setLastError(1);
+        details.setOneTimePassword(otp);
+        details.setSentryFileHash(new byte[]{0, 1, 2, 3});
+
+        steamUser.sendMachineAuthResponse(details);
+        steamUser.activeSteamGuard();
     }
 
     private void onConnected(ConnectedCallback callback) {

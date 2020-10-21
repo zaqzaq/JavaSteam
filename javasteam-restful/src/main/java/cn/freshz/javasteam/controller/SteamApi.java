@@ -37,43 +37,32 @@ import javax.annotation.PreDestroy;
 @Scope(WebApplicationContext.SCOPE_REQUEST)
 @RequestMapping("steam/api")
 public class SteamApi {
-
     private Logger logger= LoggerFactory.getLogger(this.getClass());
 
     private SteamClient steamClient;
-    private CallbackManager manager;
     private SteamUser steamUser;
     private String user;
     private String pass;
 
+    private String connectUrl="cm3-ct-sha2.cm.wmsjsteam.com:27020";
+    private String connectUrl2="cm1-ct-sha2.cm.wmsjsteam.com:27021";
+
+    private final static String SUCCESS="SUCCESS";
+
     private boolean isRuning=false;
+//    private Boolean isLogined=null;
+
+    private EResult loginEResult;
 
     private long connectStartTime;
 
     @GetMapping("getSteamID")
     public String getSteamID(){
-
-        if(StringUtils.isEmpty(user)){
-            logger.warn("user参数为空");
-            return "";
-        }
-        if(StringUtils.isEmpty(pass)){
-            logger.warn("pass参数为空");
+        String checkRet = checkArg();
+        if (!SUCCESS.equals(checkRet)) {
             return "";
         }
 
-        if(null==steamClient){
-            logger.error("steamClient获取异常,account:{}",user);
-            return "";
-        }
-
-        synchronized (steamClient){
-            try {
-                steamClient.wait();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
         if (steamClient.isConnected()&&steamClient.getSteamID()!=null) {
             logger.error("steamClient获取成功,account:{},steamID:{}",user,steamClient.getSteamID().convertToUInt64());
 
@@ -82,6 +71,81 @@ public class SteamApi {
             logger.error("steamClient获取失败,account:{}",user);
             return "";
         }
+    }
+
+    /**
+     * 关闭令牌的验证链接如下，如果域名前缀是 dota2  需要替换
+     * https://store.steampowered.com/account/steamguarddisableverification/actions/steamguarddisableverification?stoken=773c8bb536e151f0ec43d2d3d15772d0a03527a16fccdb78fff2800f91483d3203c6e26d14bf714ab295775431a71d1e&steamid=76561199079639627
+     *
+     * @return
+     */
+    @GetMapping("checkSteamGuard")
+    public String checkSteamGuard(){
+        String checkRet = checkArg();
+        if (!SUCCESS.equals(checkRet)) {
+            return checkRet;
+        }
+
+        steamClient.disconnect();
+        //换一个连接地址重新登陆
+        connectUrl=connectUrl2;
+        login();
+        if(null==loginEResult){
+            synchronized (steamClient){
+                try {
+                    steamClient.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return null==loginEResult?"登陆有异常":loginEResult.name();
+    }
+//    @GetMapping("activeSteamGuard")
+    public String activeSteamGuard(){
+        String checkRet = checkArg();
+        if (!SUCCESS.equals(checkRet)) {
+            return checkRet;
+        }
+        if (null!=loginEResult&&loginEResult==EResult.OK) {
+            steamUser.activeSteamGuard();
+            try {
+                Thread.sleep(200L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            return SUCCESS;
+        }else{
+            return "";
+        }
+    }
+
+    private String checkArg(){
+        if(StringUtils.isEmpty(user)){
+            logger.warn("user参数为空");
+            return "user参数为空";
+        }
+        if(StringUtils.isEmpty(pass)){
+            logger.warn("pass参数为空");
+            return "pass参数为空";
+        }
+
+        if(null==steamClient){
+            logger.error("steamClient获取异常,account:{}",user);
+            return "steamClient获取异常";
+        }
+
+        if(null==loginEResult){
+            synchronized (steamClient){
+                try {
+                    steamClient.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return SUCCESS;
     }
 
     @PreDestroy
@@ -93,6 +157,7 @@ public class SteamApi {
 
     @PostConstruct
     private void login(){
+        loginEResult=null;
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
         this.user= requestAttributes.getRequest().getParameter("user");
         this.pass= requestAttributes.getRequest().getParameter("pass");
@@ -122,7 +187,8 @@ public class SteamApi {
         connectStartTime=System.currentTimeMillis();
         logger.info("start connect Steam server,account:{}",user);
 
-        steamClient.connect(ServerRecord.createWebSocketServer("cm3-ct-sha2.cm.wmsjsteam.com:27020"));
+        steamClient.connect(ServerRecord.createWebSocketServer(connectUrl));
+
 //        /203.80.149.68:27017
 //        steamClient.getServers().getNextServerCandidate()
 //        steamClient.connect();
@@ -154,7 +220,8 @@ public class SteamApi {
         LogOnDetails details = new LogOnDetails();
         details.setUsername(user);
         details.setPassword(pass);
-
+        //like dota2
+        details.setLauncherType(1);
         steamUser.logOn(details);
     }
 
@@ -169,6 +236,7 @@ public class SteamApi {
     private void onLoggedOn(LoggedOnCallback callback) {
         synchronized (steamClient){
             try {
+                loginEResult=callback.getResult();
                 if (callback.getResult() != EResult.OK) {
                     if (callback.getResult() == EResult.AccountLogonDenied) {
                         // if we recieve AccountLogonDenied or one of it's flavors (AccountLogonDeniedNoMailSent, etc)

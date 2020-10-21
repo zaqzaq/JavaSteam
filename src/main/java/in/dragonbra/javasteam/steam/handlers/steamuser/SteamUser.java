@@ -14,6 +14,7 @@ import in.dragonbra.javasteam.generated.MsgClientMarketingMessageUpdate2;
 import in.dragonbra.javasteam.handlers.ClientMsgHandler;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver.CMsgClientSessionToken;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver.CMsgClientWalletInfoUpdate;
+import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2.CMsgClientUpdateMachineAuth;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver2.CMsgClientUpdateMachineAuthResponse;
 import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserverLogin.*;
@@ -152,7 +153,9 @@ public class SteamUser extends ClientMsgHandler {
         logon.getBody().setCellId(details.getCellID());
 
         //auto active Friends
-        logon.getBody().setLauncherType(1);
+        if(null!=details.getLauncherType()){
+            logon.getBody().setLauncherType(details.getLauncherType());
+        }
 
         logon.getBody().setSteam2TicketRequest(details.isRequestSteam2Ticket());
 
@@ -240,6 +243,13 @@ public class SteamUser extends ClientMsgHandler {
         client.disconnect();
     }
 
+    public void activeSteamGuard(){
+        ClientMsgProtobuf<SteammessagesClientserver2.CMsgClientRequestMachineAuth.Builder> builder = new ClientMsgProtobuf<>(SteammessagesClientserver2.CMsgClientRequestMachineAuth.class, EMsg.ClientRequestMachineAuth);
+
+        builder.getBody().setLockAccountAction(1);
+
+        client.send(builder);
+    }
     /**
      * Sends a machine auth response.
      * This should normally be used in response to a {@link UpdateMachineAuthCallback}.
