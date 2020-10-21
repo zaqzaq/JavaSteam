@@ -48,11 +48,12 @@ public class SteamApi {
     private String connectUrl2="cm1-ct-sha2.cm.wmsjsteam.com:27021";
 
     private final static String SUCCESS="SUCCESS";
+    private final static String ERROR_RETRY = "登陆有异常,请重试";
 
-    private boolean isRuning=false;
+    private volatile boolean isRuning=false;
 //    private Boolean isLogined=null;
 
-    private EResult loginEResult;
+    private volatile EResult loginEResult;
 
     private long connectStartTime;
 
@@ -77,6 +78,7 @@ public class SteamApi {
      * 关闭令牌的验证链接如下，如果域名前缀是 dota2  需要替换
      * https://store.steampowered.com/account/steamguarddisableverification/actions/steamguarddisableverification?stoken=773c8bb536e151f0ec43d2d3d15772d0a03527a16fccdb78fff2800f91483d3203c6e26d14bf714ab295775431a71d1e&steamid=76561199079639627
      *
+     * 检测令牌接口返回值列表         AccountLogonDenied  要去关令牌 | OK 表示 不用去关令牌 | 登陆有异常,请重试 | 其它就是号有问题
      * @return
      */
     @GetMapping("checkSteamGuard")
@@ -86,6 +88,12 @@ public class SteamApi {
             return checkRet;
         }
 
+        while (null==loginEResult){
+            return ERROR_RETRY;
+        }
+        if(loginEResult!=EResult.OK){
+            return loginEResult.name();
+        }
         steamClient.disconnect();
         //换一个连接地址重新登陆
         connectUrl=connectUrl2;
@@ -100,7 +108,7 @@ public class SteamApi {
             }
         }
 
-        return null==loginEResult?"登陆有异常":loginEResult.name();
+        return null==loginEResult? ERROR_RETRY :loginEResult.name();
     }
 //    @GetMapping("activeSteamGuard")
     public String activeSteamGuard(){
@@ -158,6 +166,7 @@ public class SteamApi {
     @PostConstruct
     private void login(){
         loginEResult=null;
+        isRuning=false;
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
         this.user= requestAttributes.getRequest().getParameter("user");
         this.pass= requestAttributes.getRequest().getParameter("pass");
