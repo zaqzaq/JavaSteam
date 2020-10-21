@@ -45,7 +45,7 @@ public class SteamApi {
     private String pass;
 
     private String connectUrl="cm3-ct-sha2.cm.wmsjsteam.com:27020";
-    private String connectUrl2="cm1-ct-sha2.cm.wmsjsteam.com:27020";
+    private String connectUrl2="cm2-ct-sha2.cm.wmsjsteam.com:27020";
 
     private final static String SUCCESS="SUCCESS";
     private final static String ERROR_RETRY = "登陆有异常,请重试";
