@@ -111,7 +111,7 @@ public class SteamApi {
 
 
         String retVal = null == loginEResult ? ERROR_RETRY : loginEResult.name();
-        logger.info("帐号状态:account:{} -->{}",user,retVal);
+        logger.info("帐号状态account:{} -->{}",user,retVal);
 
         return retVal;
     }
