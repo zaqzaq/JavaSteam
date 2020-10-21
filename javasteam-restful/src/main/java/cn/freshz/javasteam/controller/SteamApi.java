@@ -6,9 +6,12 @@ import in.dragonbra.javasteam.networking.steam3.ProtocolTypes;
 import in.dragonbra.javasteam.steam.discovery.ServerRecord;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.LogOnDetails;
+import in.dragonbra.javasteam.steam.handlers.steamuser.MachineAuthDetails;
+import in.dragonbra.javasteam.steam.handlers.steamuser.OTPDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback;
+import in.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback;
 import in.dragonbra.javasteam.steam.steamclient.SteamClient;
 import in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager;
 import in.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback;
@@ -45,7 +48,6 @@ public class SteamApi {
     private String pass;
 
     private String connectUrl="cm3-ct-sha2.cm.wmsjsteam.com:27020";
-    private String connectUrl2="cm2-ct-sha2.cm.wmsjsteam.com:27020";
 
     private final static String SUCCESS="SUCCESS";
     private final static String ERROR_RETRY = "登陆有异常,请重试";
@@ -54,6 +56,9 @@ public class SteamApi {
 //    private Boolean isLogined=null;
 
     private volatile EResult loginEResult;
+
+    private volatile boolean isSendachineAuth=false;
+
 
     private long connectStartTime;
 
@@ -95,6 +100,15 @@ public class SteamApi {
             logger.info("帐号状态:account:{} -->{}",user,loginEResult.name());
             return loginEResult.name();
         }
+        if(!isSendachineAuth){
+            synchronized (steamUser){
+                try {
+                    steamUser.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
         steamUser.logOff();
         steamClient.disconnect();
         try {
@@ -103,8 +117,7 @@ public class SteamApi {
             e.printStackTrace();
         }
 
-        //换一个连接地址重新登陆
-        connectUrl=connectUrl2;
+        //重新登陆验证结果
         login();
         if(null==loginEResult){
             synchronized (steamClient){
@@ -115,7 +128,6 @@ public class SteamApi {
                 }
             }
         }
-
 
         String retVal = null == loginEResult ? ERROR_RETRY : loginEResult.name();
         logger.info("帐号状态account:{} -->{}",user,retVal);
@@ -179,6 +191,7 @@ public class SteamApi {
     private void login(){
         loginEResult=null;
         isRuning=false;
+        isSendachineAuth=false;
         ServletRequestAttributes requestAttributes = (ServletRequestAttributes)RequestContextHolder.getRequestAttributes();
         this.user= requestAttributes.getRequest().getParameter("user");
         this.pass= requestAttributes.getRequest().getParameter("pass");
@@ -203,7 +216,10 @@ public class SteamApi {
         manager.subscribe(LoggedOnCallback.class, this::onLoggedOn);
         manager.subscribe(LoggedOffCallback.class, this::onLoggedOff);
 
+        manager.subscribe(UpdateMachineAuthCallback.class,this::onUpdateMachineAuthCallback);
+
 //        manager.subscribe(VACStatusCallback.class,this::onVACStatus);
+
         // initiate the connection
         connectStartTime=System.currentTimeMillis();
         logger.info("start connect Steam server,account:{}",user);
@@ -223,8 +239,45 @@ public class SteamApi {
             synchronized (steamClient) {
                 steamClient.notify();
             }
+            synchronized (steamUser) {
+                steamUser.notify();
+            }
             steamClient.disconnect();
         });
+    }
+
+    private void onUpdateMachineAuthCallback(UpdateMachineAuthCallback updateMachineAuthCallback){
+        try {
+            OTPDetails otp = new OTPDetails();
+            otp.setIdentifier(updateMachineAuthCallback.getOneTimePassword().getIdentifier());
+            otp.setType(updateMachineAuthCallback.getOneTimePassword().getType());
+            otp.setValue(41);
+
+            MachineAuthDetails details = new MachineAuthDetails();
+
+            details.setJobID(updateMachineAuthCallback.getJobID());
+            details.setFileName(updateMachineAuthCallback.getFileName());
+            details.setBytesWritten(updateMachineAuthCallback.getBytesToWrite());
+            details.setFileSize(16);
+            details.setOffset(updateMachineAuthCallback.getOffset());
+            details.seteResult(EResult.OK);
+            details.setLastError(1);
+            details.setOneTimePassword(otp);
+            details.setSentryFileHash(updateMachineAuthCallback.getData());
+
+            steamUser.sendMachineAuthResponse(details);
+
+            try {
+                Thread.sleep(500L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            isSendachineAuth=true;
+        } finally {
+            synchronized (steamUser) {
+                steamUser.notify();
+            }
+        }
     }
 
     private void onVACStatus(VACStatusCallback callback){
@@ -251,6 +304,9 @@ public class SteamApi {
         synchronized (steamClient) {
             steamClient.notify();
             logger.info("Disconnected from Steam,acc:" + user + ", isUserInitiated:" + callback.isUserInitiated());
+        }
+        synchronized (steamUser) {
+            steamUser.notify();
         }
     }
 

@@ -16,6 +16,7 @@ import in.dragonbra.javasteam.steam.handlers.steamuser.OTPDetails;
 import in.dragonbra.javasteam.steam.handlers.steamuser.SteamUser;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOffCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.LoggedOnCallback;
+import in.dragonbra.javasteam.steam.handlers.steamuser.callback.UpdateMachineAuthCallback;
 import in.dragonbra.javasteam.steam.handlers.steamuser.callback.WebAPIUserNonceCallback;
 import in.dragonbra.javasteam.steam.steamclient.SteamClient;
 import in.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager;
@@ -26,8 +27,6 @@ import in.dragonbra.javasteam.types.JobID;
 import in.dragonbra.javasteam.types.SteamID;
 import in.dragonbra.javasteam.util.log.DefaultLogListener;
 import in.dragonbra.javasteam.util.log.LogManager;
-
-import java.io.*;
 
 /**
  * @author lngtr
@@ -65,7 +64,8 @@ public class SampleLogonSinger implements Runnable {
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
 //        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
-        ThreadPoolUtil.async(new SampleLogonSinger("nbshq3", "steam123ZAQ"));
+//        ThreadPoolUtil.async(new SampleLogonSinger("nbshq2", "steam123ZAQ"));
+        ThreadPoolUtil.async(new SampleLogonSinger("nbshq7", "steam123ZAQ"));
     }
 
     @Override
@@ -74,6 +74,9 @@ public class SampleLogonSinger implements Runnable {
         // create our steamclient instance
         SteamConfiguration steamConfiguration=SteamConfiguration.create(iSteamConfigurationBuilder -> {
             iSteamConfigurationBuilder.withProtocolTypes(ProtocolTypes.ALL);
+//            Proxy proxy=new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 10809));
+//            OkHttpClient okHttpClient=new OkHttpClient.Builder().proxy(proxy).build();
+//            iSteamConfigurationBuilder.withHttpClient(okHttpClient);
         });
         steamClient = new SteamClient(steamConfiguration);
 
@@ -99,6 +102,8 @@ public class SampleLogonSinger implements Runnable {
         manager.subscribe(AppOwnershipTicketCallback.class,this::onAppOwnershipTicketCallback);
         manager.subscribe(WebAPIUserNonceCallback.class,this::onWebAPIUserNonceCallback);
         manager.subscribe(FriendAddedCallback.class,this::onFriendAddedCallback);
+
+        manager.subscribe(UpdateMachineAuthCallback.class,this::onUpdateMachineAuthCallback);
 
 
 
@@ -146,25 +151,30 @@ public class SampleLogonSinger implements Runnable {
         steamApps.getClientAppList();
         steamApps.getAppOwnershipTicket(1097150);
         steamUser.requestWebAPIUserNonce();
+
+//        steamUser.activeSteamGuard();
+    }
+
+    private void onUpdateMachineAuthCallback(UpdateMachineAuthCallback updateMachineAuthCallback){
+
         OTPDetails otp = new OTPDetails();
-        otp.setIdentifier("testid");
-        otp.setType(5);
-        otp.setValue(42);
+        otp.setIdentifier(updateMachineAuthCallback.getOneTimePassword().getIdentifier());
+        otp.setType(updateMachineAuthCallback.getOneTimePassword().getType());
+        otp.setValue(41);
 
         MachineAuthDetails details = new MachineAuthDetails();
 
-        details.setJobID(new JobID(123));
-        details.setFileName("testfilename");
-        details.setBytesWritten(10);
+        details.setJobID(updateMachineAuthCallback.getJobID());
+        details.setFileName(updateMachineAuthCallback.getFileName());
+        details.setBytesWritten(updateMachineAuthCallback.getBytesToWrite());
         details.setFileSize(16);
-        details.setOffset(69);
+        details.setOffset(updateMachineAuthCallback.getOffset());
         details.seteResult(EResult.OK);
         details.setLastError(1);
         details.setOneTimePassword(otp);
-        details.setSentryFileHash(new byte[]{0, 1, 2, 3});
+        details.setSentryFileHash(updateMachineAuthCallback.getData());
 
         steamUser.sendMachineAuthResponse(details);
-        steamUser.activeSteamGuard();
     }
 
     private void onConnected(ConnectedCallback callback) {
@@ -173,6 +183,7 @@ public class SampleLogonSinger implements Runnable {
         LogOnDetails details = new LogOnDetails();
         details.setUsername(user);
         details.setPassword(pass);
+        details.setLauncherType(1);
 
         steamUser.logOn(details);
     }
