@@ -6,6 +6,7 @@ import in.dragonbra.javasteam.protobufs.steamclient.SteammessagesClientserver;
 import in.dragonbra.javasteam.steam.discovery.ServerRecord;
 import in.dragonbra.javasteam.steam.handlers.steamapps.SteamApps;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.AppOwnershipTicketCallback;
+import in.dragonbra.javasteam.steam.handlers.steamapps.callback.DepotKeyCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.GetClientAppListResponseCallback;
 import in.dragonbra.javasteam.steam.handlers.steamapps.callback.VACStatusCallback;
 import in.dragonbra.javasteam.steam.handlers.steamfriends.SteamFriends;
@@ -27,6 +28,8 @@ import in.dragonbra.javasteam.types.JobID;
 import in.dragonbra.javasteam.types.SteamID;
 import in.dragonbra.javasteam.util.log.DefaultLogListener;
 import in.dragonbra.javasteam.util.log.LogManager;
+
+import java.util.Base64;
 
 /**
  * @author lngtr
@@ -63,9 +66,7 @@ public class SampleLogonSinger implements Runnable {
         LogManager.addListener(new DefaultLogListener());
 //        new SampleLogon("zztest2", "12345678_zz").run();
 
-//        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
-//        ThreadPoolUtil.async(new SampleLogonSinger("nbshq2", "steam123ZAQ"));
-        ThreadPoolUtil.async(new SampleLogonSinger("nbshq7", "steam123ZAQ"));
+        ThreadPoolUtil.async(new SampleLogonSinger("parmlf3017", "gf2A3L8Ye2Jl"));
     }
 
     @Override
@@ -104,6 +105,8 @@ public class SampleLogonSinger implements Runnable {
         manager.subscribe(FriendAddedCallback.class,this::onFriendAddedCallback);
 
         manager.subscribe(UpdateMachineAuthCallback.class,this::onUpdateMachineAuthCallback);
+
+        manager.subscribe(DepotKeyCallback.class,this::onDepotKeyCallback);
 
 
 
@@ -152,7 +155,12 @@ public class SampleLogonSinger implements Runnable {
         steamApps.getAppOwnershipTicket(1097150);
         steamUser.requestWebAPIUserNonce();
 
+        steamApps.getDepotDecryptionKey(1097151,1097150);
 //        steamUser.activeSteamGuard();
+    }
+
+    private void onDepotKeyCallback(DepotKeyCallback callback){
+        System.out.println("DepotKey:"+Base64.getEncoder().encodeToString(callback.getDepotKey()));
     }
 
     private void onUpdateMachineAuthCallback(UpdateMachineAuthCallback updateMachineAuthCallback){
